@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Image Generator with Backend</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: #1A1A1A;
+      min-height: 100vh;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    body.light-theme {
+      background-color: #F5F5F5;
+      color: #1A1A1A;
+    }
+    select, input, textarea {
+      background-color: #3A3A3A !important;
+      color: #E0E0E0 !important;
+      border-color: #4A4A4A !important;
+    }
+    body.light-theme select,
+    body.light-theme input,
+    body.light-theme textarea {
+      background-color: #E0E0E0 !important;
+      color: #1A1A1A !important;
+      border-color: #A0A0A0 !important;
+    }
+    select:focus, input:focus, textarea:focus {
+      outline: none;
+      border-color: #5B4EFF !important;
+    }
+    body.light-theme .text-gray-300 {
+      color: #4A4A4A !important;
+    }
+    body.light-theme .text-gray-400 {
+      color: #6A6A6A !important;
+    }
+    body.light-theme .text-gray-500 {
+      color: #5A5A5A !important;
+    }
+    body.light-theme #status {
+      color: #4A4A4A !important;
+    }
+    .free-text {
+      font-size: 0.625rem;
+    }
+    @media (min-width: 640px) {
+      .free-text {
+        font-size: 0.75rem;
+      }
+    }
+    header, footer {
+      background-color: rgba(42, 42, 42, 0.9);
+      transition: background-color 0.3s;
+    }
+    body.light-theme header,
+    body.light-theme footer {
+      background-color: rgba(213, 213, 213, 0.9);
+    }
+    body.light-theme header h1 {
+      color: #1C2526;
+    }
+    footer p {
+      color: #9CA3AF;
+    }
+    body.light-theme footer p,
+    body.light-theme footer a {
+      color: #4A4A4A;
+    }
+    footer a:hover {
+      color: #FFFFFF;
+    }
+    body.light-theme footer a:hover {
+      color: #1C2526;
+    }
+    .theme-toggle-container {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .theme-toggle {
+      position: relative;
+      width: 3rem;
+      height: 1.5rem;
+      background-color: #3A3A3A;
+      border-radius: 9999px;
+      border: 2px solid #4A4A4A;
+      cursor: pointer;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+    .theme-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .theme-toggle .slider {
+      position: absolute;
+      top: 50%;
+      left: 2px;
+      transform: translateY(-50%);
+      width: 1.25rem;
+      height: 1.25rem;
+      background-color: #5B4EFF;
+      border-radius: 50%;
+      transition: transform 0.3s, background-color 0.3s;
+    }
+    .theme-toggle input:checked + .slider {
+      transform: translateX(1.5rem) translateY(-50%);
+    }
+    .theme-toggle input:checked ~ .theme-label-dark {
+      color: #E0E0E0;
+      font-weight: 600;
+    }
+    .theme-toggle input:not(:checked) ~ .theme-label-light {
+      color: #E0E0E0;
+      font-weight: 600;
+    }
+    .theme-label-light, .theme-label-dark {
+      color: #6A6A6A;
+      font-size: 0.875rem;
+    }
+    body.light-theme .theme-toggle {
+      background-color: #E0E0E0;
+      border-color: #A0A0A0;
+    }
+    body.light-theme .theme-toggle .slider {
+      background-color: #4A3ECC;
+    }
+    .loader {
+      width: 60px;
+      aspect-ratio: 1;
+      display: flex;
+      color: #E0E0E0;
+      border: 4px solid;
+      box-sizing: border-box;
+      border-radius: 50%;
+      background: 
+        radial-gradient(circle 5px, currentColor 95%, transparent),
+        linear-gradient(currentColor 50%, transparent 0) 50%/4px 60% no-repeat;
+      animation: l1 2s infinite linear;
+      margin: 0 auto;
+    }
+    .loader:before {
+      content: "";
+      flex: 1;
+      background: linear-gradient(currentColor 50%, transparent 0) 50%/4px 80% no-repeat;
+      animation: inherit;
+    }
+    @keyframes l1 {
+      100% {transform: rotate(1turn)}
+    }
+    body.light-theme .loader {
+      color: #1A1A1A;
+    }
+    .creative-btn {
+      position: relative;
+      width: 25%;
+      min-width: 16rem;
+      padding: 0.5rem;
+      background: linear-gradient(90deg, #5B4EFF, #A855F7);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 0.9rem;
+      font-size: 1.6rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 0 10px rgba(91, 78, 255, 0.5);
+    }
+    .creative-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(91, 78, 255, 0.8);
+    }
+    .creative-btn:disabled {
+      background: #6B7280;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .creative-btn svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+    @media (min-width: 640px) {
+      .creative-btn {
+        font-size: 1.125rem;
+        padding: 0.875rem;
+      }
+    }
+  </style>
+  <script defer>
+    function toggleTheme() {
+      const body = document.body;
+      const themeToggleInput = document.getElementById('theme-toggle-btn');
+      body.classList.toggle('light-theme');
+    }
+
+    async function generateImage() {
+      const descriptionInput = document.getElementById('description').value;
+      const stylePreset = document.getElementById('style-preset').value;
+      const aspectRatio = document.getElementById('aspect-ratio').value;
+      const outputFormat = document.getElementById('output-format').value;
+      const seed = document.getElementById('seed').value;
+      const generateBtn = document.getElementById('generate-btn');
+      const retryBtn = document.getElementById('retry-btn');
+      const status = document.getElementById('status');
+      const imageContainer = document.getElementById('image-container');
+      const generatedImage = document.getElementById('generated-image');
+      const downloadBtn = document.getElementById('download-btn');
+      const loader = document.querySelector('.loader');
+
+      status.textContent = 'Generating image...';
+      generateBtn.disabled = true;
+      retryBtn.classList.add('hidden');
+      imageContainer.classList.add('hidden');
+      generatedImage.src = '';
+      downloadBtn.style.display = 'none';
+      downloadBtn.href = '#';
+      loader.classList.remove('hidden');
+
+      const url = '/generate';
+      const payload = {
+        description: descriptionInput || "A futuristic city skyline at sunset, with flying cars and neon holographic billboards, cyberpunk style",
+        style_preset: stylePreset,
+        aspect_ratio: aspectRatio,
+        output_format: outputFormat,
+        seed: seed
+      };
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (response.ok && result.success) {
+          status.textContent = `Image generated successfully!`;
+          generatedImage.src = result.image_url;
+          imageContainer.classList.remove('hidden');
+          if (result.filename) {
+            downloadBtn.href = `/download/${result.filename}`;
+            downloadBtn.style.display = 'block';
+          }
+        } else {
+          status.textContent = `Error: ${result.error || 'Failed to generate image'}`;
+          retryBtn.classList.remove('hidden');
+        }
+      } catch (error) {
+        status.textContent = 'Request failed: Failed to fetch. Please check your network or the backend server.';
+        retryBtn.classList.remove('hidden');
+      } finally {
+        generateBtn.disabled = false;
+        loader.classList.add('hidden');
+      }
+    }
+  </script>
+</head>
+<body class="flex flex-col">
+  <header class="text-white w-full py-4 px-4 sm:px-6 md:px-8 shadow-md">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <h1 class="text-xl sm:text-2xl font-bold">
+        AI Image Generator <span class="text-green-500 free-text">Free</span>
+      </h1>
+      <div class="theme-toggle-container">
+        <label class="theme-toggle">
+          <input type="checkbox" id="theme-toggle-btn" onchange="toggleTheme()">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex flex-col p-4 sm:p-6 md:p-8 flex-grow">
+    <div class="flex flex-col gap-4 w-full max-w-3xl mx-auto">
+      <div>
+        <label for="description" class="block text-sm sm:text-base font-medium text-gray-300 mb-1">Prompt</label>
+        <textarea
+          id="description"
+          class="block w-full p-3 border rounded-md placeholder-gray-500 text-sm sm:text-base"
+          rows="4"
+          placeholder="Describe the image you want..."
+        ></textarea>
+      </div>
+
+      <div>
+        <label for="style-preset" class="block text-sm sm:text-base font-medium text-gray-300 mb-1">Style Preset:</label>
+        <select id="style-preset" class="block w-full p-3 border rounded-md text-sm sm:text-base">
+          <option value="none" selected>None (Default)</option>
+          <option value="3d-model">3D Model</option>
+          <option value="analog-film">Analog Film</option>
+          <option value="anime">Anime</option>
+          <option value="cinematic">Cinematic</option>
+          <option value="comic-book">Comic Book</option>
+          <option value="digital-art">Digital Art</option>
+          <option value="enhance">Enhance</option>
+          <option value="fantasy-art">Fantasy Art</option>
+          <option value="isometric">Isometric</option>
+          <option value="line-art">Line Art</option>
+          <option value="low-poly">Low Poly</option>
+          <option value="modeling-compound">Modeling Compound</option>
+          <option value="neon-punk">Neon Punk</option>
+          <option value="origami">Origami</option>
+          <option value="photographic">Photographic</option>
+          <option value="pixel-art">Pixel Art</option>
+          <option value="tile-texture">Tile Texture</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="aspect-ratio" class="block text-sm sm:text-base font-medium text-gray-300 mb-1">Aspect Ratio:</label>
+        <select id="aspect-ratio" class="block w-full p-3 border rounded-md text-sm sm:text-base">
+          <option value="1:1">512x512</option>
+          <option value="16:9" selected>16:9 (Landscape)</option>
+          <option value="4:3">4:3</option>
+          <option value="9:16">9:16 (Portrait)</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="output-format" class="block text-sm sm:text-base font-medium text-gray-300 mb-1">Output Format:</label>
+        <select id="output-format" class="block w-full p-3 border rounded-md text-sm sm:text-base">
+          <option value="png" selected>PNG (Best quality)</option>
+          <option value="jpeg">JPEG</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="seed" class="block text-sm sm:text-base font-medium text-gray-300 mb-1">Seed (0 for random):</label>
+        <input
+          id="seed"
+          type="number"
+          min="0"
+          value="0"
+          class="block w-full p-3 border rounded-md text-sm sm:text-base"
+        >
+        <p class="text-xs sm:text-sm text-gray-500 mt-1">Use the same seed to get consistent results or 0 for random generation</p>
+      </div>
+
+      <button
+        id="generate-btn"
+        class="creative-btn mx-auto"
+        onclick="generateImage()"
+      >
+        Create Art
+      </button>
+
+      <div class="loader hidden"></div>
+
+      <button
+        id="retry-btn"
+        class="w-full bg-gray-600 text-white p-3 rounded-md hover:bg-gray-700 hidden mt-2 text-sm sm:text-base"
+        onclick="generateImage()"
+      >
+        Retry
+      </button>
+
+      <p id="status" class="mt-4 text-center text-gray-400 text-sm sm:text-base"></p>
+
+      <div id="image-container" class="mt-4 hidden">
+        <img id="generated-image" src="" alt="Generated Image" class="w-full rounded-md">
+        <a
+          id="download-btn"
+          href="#"
+          class="block w-full bg-[#5B4EFF] text-white p-3 rounded-md hover:bg-[#4A3ECC] text-center mt-2 text-sm sm:text-base"
+          style="display: none;"
+          download
+        >
+          Download Image
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="w-full py-4 px-4 sm:px-6 md:px-8">
+    <div class="max-w-7xl mx-auto text-center">
+      <p class="text-sm sm:text-base">© 2025 Glitch Artist. All rights reserved.</p>
+      <div class="mt-2 flex justify-center gap-4">
+        <a href="#" class="text-gray-400 hover:text-white text-sm sm:text-base">Privacy Policy</a>
+        <a href="#" class="text-gray-400 hover:text-white text-sm sm:text-base">Terms of Service</a>
+        <a href="#" class="text-gray-400 hover:text-white text-sm sm:text-base">Contact Us</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
